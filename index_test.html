@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js QR AR Example</title>
+    <link type="text/css" rel="stylesheet" href="main.css">
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <div id="info">
+        <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> AR - 3D Models with QR<br>
+        (Chrome Android 81+)
+    </div>
+    <div id="qr-reader" style="width: 300px; margin: auto;"></div>
+    <script type="module">
+        // Import Three.js and addons
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js';
+        import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/webxr/ARButton.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/loaders/GLTFLoader.js';
+
+        let camera, scene, renderer;
+        let controller, loader;
+        let model; // Placeholder for the loaded 3D model
+
+        init();
+        setupQRScanner();
+
+        function init() {
+            const container = document.createElement('div');
+            document.body.appendChild(container);
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3);
+            light.position.set(0.5, 1, 0.25);
+            scene.add(light);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setAnimationLoop(animate);
+            renderer.xr.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            document.body.appendChild(ARButton.createButton(renderer));
+
+            loader = new GLTFLoader(); // Create a GLTFLoader instance
+
+            // Set up controller
+            controller = renderer.xr.getController(0);
+            controller.addEventListener('select', onSelect);
+            scene.add(controller);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function setupQRScanner() {
+            const qrReader = new Html5Qrcode("qr-reader");
+            const qrConfig = { fps: 10, qrbox: 250 };
+
+            qrReader.start(
+                { facingMode: "environment" },
+                qrConfig,
+                (decodedText) => {
+                    console.log(`QR Code scanned: ${decodedText}`);
+                    onQRCodeScanned(decodedText);
+                },
+                (error) => {
+                    console.error(`QR Code scan error: ${error}`);
+                }
+            ).catch((err) => {
+                console.error(`Error starting QR scanner: ${err}`);
+            });
+        }
+
+        function onQRCodeScanned(qrCodeText) {
+            const modelURL = mapQRCodeToModel(qrCodeText);
+
+            if (modelURL) {
+                loadModel(modelURL);
+            } else {
+                console.warn("No matching model for this QR code.");
+            }
+        }
+
+        function mapQRCodeToModel(qrCodeText) {
+            // Map QR code content to model URLs
+            const modelMapping = {
+                "model1": "scene.gltf",
+                "model2": "scene1.gltf",
+            };
+
+            return modelMapping[qrCodeText] || null;
+        }
+
+        function loadModel(url) {
+            loader.load(
+                url,
+                (gltf) => {
+                    if (model) {
+                        scene.remove(model); // Remove the existing model if already loaded
+                    }
+
+                    model = gltf.scene;
+                    model.position.set(0, 0, -0.5); // Adjust position
+                    scene.add(model);
+
+                    console.log("Model loaded successfully!");
+                },
+                undefined,
+                (error) => {
+                    console.error("Error loading model:", error);
+                }
+            );
+        }
+
+        function onSelect() {
+            // Placeholder for potential future interactivity on model selection
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
