@@ -116,7 +116,7 @@
                     }
 
                     model = gltf.scene;
-
+                    model.scale.set(0.1, 0.1, 0.1);
                     // Position the model directly in the AR scene
                     model.position.set(0, 0, -0.5); // Adjust the position based on the QR code scan
                     scene.add(model);
