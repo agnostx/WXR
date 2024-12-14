@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three.js QR AR Example</title>
     <link type="text/css" rel="stylesheet" href="main.css">
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+
 </head>
 <body>
 
@@ -31,7 +31,7 @@
         import * as THREE from 'three';
         import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/webxr/ARButton.js';
         import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-
+        import QrScanner from 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.0/qr-scanner.min.js';  // Import QR Scanner as a module
 
         // Now that the scripts are loaded, we can safely use THREE
         let camera, scene, renderer;
@@ -73,22 +73,18 @@
         }
 
         function setupQRScanner() {
-            const qrReader = new Html5Qrcode("qr-reader");
-            const qrConfig = { fps: 10, qrbox: 250 };
-
-            qrReader.start(
-                { facingMode: "environment" },
-                qrConfig,
-                (decodedText) => {
-                    console.log(`QR Code scanned: ${decodedText}`);
-                    onQRCodeScanned(decodedText);
-                },
-                (error) => {
-                    console.error(`QR Code scan error: ${error}`);
-                }
-            ).catch((err) => {
-                console.error(`Error starting QR scanner: ${err}`);
+            const qrReader = new QrScanner(document.createElement('video'), (result) => {
+                console.log(`QR Code scanned: ${result}`);
+                onQRCodeScanned(result);
             });
+
+            qrReader.start()
+                .then(() => {
+                    console.log("QR Scanner started successfully!");
+                })
+                .catch(err => {
+                    console.error("Error starting QR Scanner:", err);
+                });
         }
 
         function onQRCodeScanned(qrCodeText) {
@@ -104,7 +100,7 @@
         function mapQRCodeToModel(qrCodeText) {
             // Map QR code content to model URLs
             const modelMapping = {
-                "model1": "scene.gltf",
+                "model1": "scene.gltf", // Update with your actual GLTF model URLs
                 "model2": "scene1.gltf",
             };
 
@@ -120,7 +116,9 @@
                     }
 
                     model = gltf.scene;
-                    model.position.set(0, 0, -0.5); // Adjust position
+
+                    // Position the model directly in the AR scene
+                    model.position.set(0, 0, -0.5); // Adjust the position based on the QR code scan
                     scene.add(model);
 
                     console.log("Model loaded successfully!");
