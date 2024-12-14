@@ -8,17 +8,32 @@
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
 </head>
 <body>
+
+      <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+                "three/examples/jsm/loaders/GLTFLoader": "https://unpkg.com/three@0.163.0/examples/jsm/loaders/GLTFLoader.js"
+            }
+        }
+    </script>
+
+
     <div id="info">
         <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> AR - 3D Models with QR<br>
         (Chrome Android 81+)
     </div>
     <div id="qr-reader" style="width: 300px; margin: auto;"></div>
-    <script type="module">
-        // Import Three.js and addons
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js';
-        import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/webxr/ARButton.js';
-        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/loaders/GLTFLoader.js';
 
+    <!-- Move the scripts here to the end of the body -->
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.0/examples/jsm/webxr/ARButton.js';
+        import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+
+
+        // Now that the scripts are loaded, we can safely use THREE
         let camera, scene, renderer;
         let controller, loader;
         let model; // Placeholder for the loaded 3D model
