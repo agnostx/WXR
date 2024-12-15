@@ -70,8 +70,8 @@
 
             window.addEventListener('resize', onWindowResize);
 
-            video = await setupCamera(); // Initialize the camera and QR scan
-            await startQRCodeScanning(); // Start QR scanning after setup
+            await startQRCodeScanning(); // Start QR scanning before AR setup
+            video=await setupCamera(); / // Start QR scanning after setup
         }
 
         async function setupCamera() {
@@ -150,8 +150,11 @@
                 scene.add(model);
 
                 timeoutId = setTimeout(() => {
-                    scene.remove(activeModel);
-                    activeModel = null;
+                    if (activeModel) {
+                        scene.remove(activeModel);
+                        activeModel = null;
+                        console.log("Model removed after 5 seconds.");
+                    }
                 }, 5000);
             });
         }
