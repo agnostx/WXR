@@ -39,8 +39,8 @@
         let camera, scene, renderer;
         let controller, loader;
         let model; // Placeholder for the loaded 3D model
-        let video;
         let scan;
+        let video, qrScanner; // Keep qrScanner as a global variable
         let actives = [];
         let alltimes = [];
         let allmodels = [];
@@ -72,57 +72,46 @@
 
             window.addEventListener('resize', onWindowResize);
 
-            //await startQRCodeScanning(); // Start QR scanning before AR setup
-            video=await setupCamera(); // Start QR scanning after setup
+            video = await setupCamera(); // Start camera setup
         }
 
         async function setupCamera() {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', focusMode: 'continuous' } });
-          const clonedStream = new MediaStream(stream.getTracks()); // Clone the stream
+            const constraints = { video: { facingMode: 'environment', focusMode: 'continuous' } };
 
-          // Use clonedStream for QR Scanner
-          const qrScannerVideo = document.createElement('video');
-          qrScannerVideo.style.display = 'none'; // Don't show video
-          qrScannerVideo.srcObject = clonedStream;
-          document.body.appendChild(qrScannerVideo);
+            try {
+                const qrScannerStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const arStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-          const qrScanner = new QrScanner(qrScannerVideo, onQRCodeScanned);
-          qrScanner.start();
-          console.log('QR Scanner started');
+                // QR Scanner setup
+                const qrScannerVideo = document.createElement('video');
+                qrScannerVideo.style.display = 'none';
+                qrScannerVideo.srcObject = qrScannerStream;
+                document.body.appendChild(qrScannerVideo); // Important: append to the DOM
 
-          // Use original stream for AR
-          const video = document.createElement('video');
-          video.srcObject = stream;
-          await video.play();
+                qrScanner = new QrScanner(qrScannerVideo, onQRCodeScanned);
+                qrScanner.start();
+                console.log('QR Scanner started');
 
-          console.log('Camera feed is playing');
-          return video;
+                // AR Video setup. No need to append to the DOM if you are not displaying the camera feed
+                const video = document.createElement('video');
+                video.srcObject = arStream;
+                await video.play();
+                video.style.display = 'none';
+                document.body.appendChild(video);
+
+                console.log('AR Camera feed is playing');
+                return video;
+            } catch (error) {
+                console.error("Error accessing media devices:", error);
+                // Handle errors appropriately, e.g., display a message to the user
+                return null; // Or throw the error if you want to stop execution
+            }
         }
 
-        // // Function to start QR scanning using QrScanner
-        // async function startQRCodeScanning() {
-        //     const qrVideo = document.createElement('video');
-        //     document.body.appendChild(qrVideo); // Add video to body
-        //
-        //     try {
-        //         const stream = await navigator.mediaDevices.getUserMedia({
-        //             video: { facingMode: 'environment' }
-        //         });
-        //         qrVideo.srcObject = stream;
-        //         qrVideo.play();
-        //
-        //         const qrScanner = new QrScanner(qrVideo, onQRCodeScanned);
-        //         qrScanner.start();
-        //         console.log('QR Scanner started');
-        //     } catch (err) {
-        //         console.error('Error accessing camera:', err);
-        //     }
-        // }
-
         function onQRCodeScanned(result) {
-            console.log(`QR Code Scanned: ${result}`);
-            if (qrToModelMap[result]) {
-                displayModel(result);
+            console.log(`QR Code Scanned: ${result.data}`); // Access data property
+            if (qrToModelMap[result.data]) {
+                displayModel(result.data);
             } else {
                 console.log("No model found for this QR code.");
             }
