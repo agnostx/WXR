@@ -84,15 +84,25 @@
 
         function scanQRCode(video) {
           const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext('2d', { willReadFrequently: true }); // Enable frequent read optimization
 
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
 
+
           return () => {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            return jsQR(imageData.data, imageData.width, imageData.height);
+            const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (qrCode) {
+              console.log("Detected QR Code: ", qrCode.data);
+            }
+            //else {
+            //  console.log("No QR code detected.");
+            //}
+
+            return qrCode;
           };
         }
 
