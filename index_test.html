@@ -78,8 +78,6 @@
         }
 
         async function startQRCodeScanning(video) {
-            document.body.appendChild(qrVideo); // Add video to body
-
             try {
                 const qrScanner = new QrScanner(video, onQRCodeScanned);
                 qrScanner.start();
