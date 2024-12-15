@@ -72,22 +72,16 @@
 
             window.addEventListener('resize', onWindowResize);
 
-            await startQRCodeScanning(); // Start QR scanning before AR setup
-            video=await setupCamera(); // Start QR scanning after setup
+            video=await setupCamera();
+            await startQRCodeScanning(video); // Start QR scanning before AR setup
+             // Start QR scanning after setup
         }
 
-        async function startQRCodeScanning() {
-            const qrVideo = document.createElement('video');
+        async function startQRCodeScanning(video) {
             document.body.appendChild(qrVideo); // Add video to body
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
-                qrVideo.srcObject = stream;
-                qrVideo.play();
-
-                const qrScanner = new QrScanner(qrVideo, onQRCodeScanned);
+                const qrScanner = new QrScanner(video, onQRCodeScanned);
                 qrScanner.start();
                 console.log('QR Scanner started');
             } catch (err) {
