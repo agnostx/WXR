@@ -104,6 +104,8 @@
 
             if (qrCode) {
               console.log(`QR Code Detected: ${qrCode.data}`);
+            } else {
+              console.log(`QR Code Not Detected:`);
             }
 
             return qrCode;
