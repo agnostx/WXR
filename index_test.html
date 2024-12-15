@@ -39,10 +39,10 @@
         let camera, scene, renderer;
         let controller, loader;
         let model; // Placeholder for the loaded 3D model
+        let video;
+        let scan;
 
-        init();
-
-        function init() {
+        async function init() {
             const container = document.createElement('div');
             document.body.appendChild(container);
 
@@ -71,6 +71,10 @@
             scene.add(controller);
 
             window.addEventListener('resize', onWindowResize);
+
+             // Initialize the camera and QR scan
+            video = await setupCamera();
+            scan = scanQRCode(video);
         }
 
         async function setupCamera() {
@@ -84,7 +88,6 @@
           return video;
         }
 
-        const debugElement = document.getElementById('debug-info');
 
         function scanQRCode(video) {
           const canvas = document.createElement('canvas');
@@ -100,10 +103,7 @@
             const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (qrCode) {
-              debugElement.innerText = `Debug Info: QR Code Detected - ${qrCode.data}`;
               console.log(`QR Code Detected: ${qrCode.data}`);
-            } else {
-              debugElement.innerText = "Debug Info: No QR code detected.";
             }
 
             return qrCode;
@@ -152,18 +152,7 @@
           });
         }
 
-        (async function() {
-          const video = await setupCamera();
-          const scan = scanQRCode(video);
 
-          renderer.setAnimationLoop(() => {
-            const qrCode = scan();
-            if (qrCode && qrToModelMap[qrCode.data]) {
-              displayModel(qrCode.data);
-            }
-            renderer.render(scene, camera);
-          });
-        })();
 
         function onSelect() {
             // Placeholder for potential future interactivity on model selection
@@ -180,12 +169,20 @@
             renderer.render(scene, camera);
         }
 
-        setInterval(() => {
-          const qrCode = scan();
-          if (qrCode && qrToModelMap[qrCode.data]) {
-            displayModel(qrCode.data);
-          }
-        }, 500); // Scan every 500ms
+
+        function startQRCodeScanning() {
+            setInterval(() => {
+                const qrCode = scan();  // Scan periodically every 500ms
+                if (qrCode && qrToModelMap[qrCode.data]) {
+                    displayModel(qrCode.data);  // If QR code is found, load model
+                }
+            }, 500);  // Scan every 500ms
+        }
+
+        // Call startQRCodeScanning after initialization
+        init().then(() => {
+            startQRCodeScanning();  // Start QR scanning after everything is set up
+        });
 
     </script>
 </body>
