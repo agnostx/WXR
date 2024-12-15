@@ -72,36 +72,52 @@
 
             window.addEventListener('resize', onWindowResize);
 
-            video=await setupCamera();
-            await startQRCodeScanning(video); // Start QR scanning before AR setup
-             // Start QR scanning after setup
-        }
-
-        async function startQRCodeScanning(video) {
-            try {
-                const qrScanner = new QrScanner(video, onQRCodeScanned);
-                qrScanner.start();
-                console.log('QR Scanner started');
-            } catch (err) {
-                console.error('Error accessing camera:', err);
-            }
+            //await startQRCodeScanning(); // Start QR scanning before AR setup
+            video=await setupCamera(); // Start QR scanning after setup
         }
 
         async function setupCamera() {
-            const arVideo = document.createElement('video');
-            arVideo.style.display = 'none';  // Don't show video for AR
-            document.body.appendChild(arVideo);
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', focusMode: 'continuous' } });
+          const clonedStream = new MediaStream(stream.getTracks()); // Clone the stream
 
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });  // AR-specific camera
-            arVideo.srcObject = stream;
-            await arVideo.play();
+          // Use clonedStream for QR Scanner
+          const qrScannerVideo = document.createElement('video');
+          qrScannerVideo.style.display = 'none'; // Don't show video
+          qrScannerVideo.srcObject = clonedStream;
+          document.body.appendChild(qrScannerVideo);
 
-            console.log('Camera feed is playing for AR');
-            return arVideo;
+          const qrScanner = new QrScanner(qrScannerVideo, onQRCodeScanned);
+          qrScanner.start();
+          console.log('QR Scanner started');
+
+          // Use original stream for AR
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          await video.play();
+
+          console.log('Camera feed is playing');
+          return video;
         }
 
-        // Function to start QR scanning using QrScanner
-
+        // // Function to start QR scanning using QrScanner
+        // async function startQRCodeScanning() {
+        //     const qrVideo = document.createElement('video');
+        //     document.body.appendChild(qrVideo); // Add video to body
+        //
+        //     try {
+        //         const stream = await navigator.mediaDevices.getUserMedia({
+        //             video: { facingMode: 'environment' }
+        //         });
+        //         qrVideo.srcObject = stream;
+        //         qrVideo.play();
+        //
+        //         const qrScanner = new QrScanner(qrVideo, onQRCodeScanned);
+        //         qrScanner.start();
+        //         console.log('QR Scanner started');
+        //     } catch (err) {
+        //         console.error('Error accessing camera:', err);
+        //     }
+        // }
 
         function onQRCodeScanned(result) {
             console.log(`QR Code Scanned: ${result}`);
