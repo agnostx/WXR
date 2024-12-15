@@ -98,7 +98,7 @@
 
                     const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
-
+                    console.log(code);
                     if (code) {
                         console.log(`QR Code Detected: ${code.data}`);
                         return code
