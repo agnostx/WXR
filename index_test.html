@@ -23,7 +23,6 @@
         <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> AR - 3D Models with QR<br>
         (Chrome Android 81+)
     </div>
-    <div id="qr-reader" style="width: 300px; margin: auto;"></div>
 
     <!-- Move the scripts here to the end of the body -->
 
@@ -39,7 +38,6 @@
         let model; // Placeholder for the loaded 3D model
 
         init();
-        setupQRScanner();
 
         function init() {
             const container = document.createElement('div');
@@ -72,74 +70,86 @@
             window.addEventListener('resize', onWindowResize);
         }
 
-        function setupQRScanner() {
-            const qrReader = new QrScanner(document.createElement('video'), (result) => {
-                console.log(`QR Code scanned: ${result}`);
-                onQRCodeScanned(result);
-            });
+        async function setupCamera() {
+          const video = document.createElement('video');
+          video.style.display = 'none';
+          document.body.appendChild(video);
 
-            qrReader.start()
-                .then(() => {
-                    console.log("QR Scanner started successfully!");
-                })
-                .catch(err => {
-                    console.error("Error starting QR Scanner:", err);
-                });
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          video.srcObject = stream;
+          await video.play();
+          return video;
         }
 
-        function onQRCodeScanned(qrCodeText) {
-            const modelURL = mapQRCodeToModel(qrCodeText);
 
-            if (modelURL) {
-                loadModel(modelURL);
-            } else {
-                console.warn("No matching model for this QR code.");
+        function scanQRCode(video) {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+
+          return () => {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            return jsQR(imageData.data, imageData.width, imageData.height);
+          };
+        }
+
+        const qrToModelMap = {
+            "model1": "scene.gltf", // Update with your actual GLTF model URLs
+            "model2": "scene1.gltf",
+        };
+
+        let activeModel = null;
+        let timeoutId = null;
+
+        async function loadModel(path) {
+          const loader = new THREE.GLTFLoader();
+          const gltf = await loader.loadAsync(path);
+          return gltf.scene;
+        }
+
+        function displayModel(code) {
+          if (activeModel) {
+            scene.remove(activeModel);
+          }
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+
+          loadModel(qrToModelMap[code]).then(model => {
+
+              if (code === "model1") {
+                  model.scale.set(0.03, 0.03, 0.03);
+              }
+
+
+              // Position the model in the scene
+              model.position.set(0, 0, -0.5);
+
+              activeModel = model;
+              scene.add(model);
+
+              timeoutId = setTimeout(() => {
+                  scene.remove(activeModel);
+                  activeModel = null;
+              }, 5000);
+          });
+        }
+
+        (async function() {
+          const video = await setupCamera();
+          const scan = scanQRCode(video);
+
+          renderer.setAnimationLoop(() => {
+            const qrCode = scan();
+            if (qrCode && qrToModelMap[qrCode.data]) {
+              displayModel(qrCode.data);
             }
-        }
-
-        function mapQRCodeToModel(qrCodeText) {
-            // Map QR code content to model URLs
-            const modelMapping = {
-                "model1": "scene.gltf", // Update with your actual GLTF model URLs
-                "model2": "scene1.gltf",
-            };
-
-            return modelMapping[qrCodeText] || null;
-        }
-
-        function loadModel(url) {
-            loader.load(
-                url,
-                (gltf) => {
-                    if (model) {
-                        scene.remove(model); // Remove the existing model if already loaded
-                    }
-
-                    model = gltf.scene;
-
-                    // Scale down the model (optional)
-                    model.scale.set(0.1, 0.1, 0.1);
-
-                    // Position the model in the scene
-                    model.position.set(0, 0, -0.5);
-
-                    // Add the model to the scene
-                    scene.add(model);
-
-                    console.log("Model loaded successfully!");
-
-                    // Make the model invisible after a specified time (e.g., 5 seconds)
-                    setTimeout(() => {
-                        model.visible = false; // Hide the model after 5 seconds
-                        console.log("Model is now hidden.");
-                    }, 5000); // 5000 milliseconds = 5 seconds
-                },
-                undefined,
-                (error) => {
-                    console.error("Error loading model:", error);
-                }
-            );
-        }
+            renderer.render(scene, camera);
+          });
+        })();
 
         function onSelect() {
             // Placeholder for potential future interactivity on model selection

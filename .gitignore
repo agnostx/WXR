@@ -1,0 +1,33 @@
+# Python general ignores
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.whl
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+.env
+
+# PyCharm specific ignores
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Workspace-related files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# User-specific settings
+.vscode/
+*.log
+*.tmp
+*.bak
+*.orig
