@@ -125,7 +125,7 @@
         let timeoutId = null;
 
         async function loadModel(path) {
-            const loader = new THREE.GLTFLoader();
+            const loader = new GLTFLoader();
             const gltf = await loader.loadAsync(path);
             return gltf.scene;
         }
