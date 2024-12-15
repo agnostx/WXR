@@ -47,7 +47,6 @@
             document.body.appendChild(container);
 
             scene = new THREE.Scene();
-
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
             const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3);
@@ -63,71 +62,54 @@
 
             document.body.appendChild(ARButton.createButton(renderer));
 
-            loader = new GLTFLoader(); // Create a GLTFLoader instance
+            loader = new GLTFLoader();
 
-            // Set up controller
             controller = renderer.xr.getController(0);
             controller.addEventListener('select', onSelect);
             scene.add(controller);
 
             window.addEventListener('resize', onWindowResize);
 
-             // Initialize the camera and QR scan
-            video = await setupCamera();
+            video = await setupCamera(); // Initialize the camera and QR scan
+            await startQRCodeScanning(); // Start QR scanning after setup
         }
 
         async function setupCamera() {
-           const video = document.createElement('video');
-           video.style.display = 'none'; // Don't show video
-           document.body.appendChild(video);
+            const video = document.createElement('video');
+            video.style.display = 'none'; // Don't show video
+            document.body.appendChild(video);
 
-           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-           video.srcObject = stream;
-           await video.play();
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = stream;
+            await video.play();
 
-           console.log('Camera feed is playing');
-           return video;
+            console.log('Camera feed is playing');
+            return video;
         }
 
-        function detectQRCode() {
-                    const canvasElement = document.createElement('canvas');
-                    canvasElement.width = video.videoWidth;
-                    canvasElement.height = video.videoHeight;
-                    const canvasContext = canvasElement.getContext('2d');
-                    canvasContext.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+        // Function to start QR scanning using QrScanner
+        async function startQRCodeScanning() {
+            const qrScanner = new QrScanner(video, (result) => {
+                console.log(`QR Code scanned: ${result}`);
+                onQRCodeScanned(result);
+            });
 
-                    const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    console.log(code);
-                    if (code) {
-                        console.log(`QR Code Detected: ${code.data}`);
-                        return code
-                    }else{
-                        console.log(`QR Code not Detected`);
-                    }
-                }
-        // function scanQRCode(video) {
-        //    const canvas = document.createElement('canvas');
-        //    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        //
-        //    // Ensure canvas size matches the video feed
-        //    canvas.width = video.videoWidth;
-        //    canvas.height = video.videoHeight;
-        //
-        //    return () => {
-        //       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        //       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        //       const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-        //
-        //     if (qrCode) {
-        //       console.log(`QR Code Detected: ${qrCode.data}`);
-        //     } else {
-        //       console.log(`QR Code Not Detected:`);
-        //     }
-        //
-        //     return qrCode;
-        //   };
-        // }
+            try {
+                await qrScanner.start();  // Start QR scanner
+                console.log("QR Scanner started successfully!");
+            } catch (err) {
+                console.error("Error starting QR Scanner:", err);
+            }
+        }
+
+        function onQRCodeScanned(result) {
+            console.log(`QR Code Scanned: ${result}`);
+            if (qrToModelMap[result]) {
+                displayModel(result);
+            } else {
+                console.log("No model found for this QR code.");
+            }
+        }
 
         const qrToModelMap = {
             "model1": "scene.gltf", // Update with your actual GLTF model URLs
@@ -138,40 +120,36 @@
         let timeoutId = null;
 
         async function loadModel(path) {
-          const loader = new THREE.GLTFLoader();
-          const gltf = await loader.loadAsync(path);
-          return gltf.scene;
+            const loader = new THREE.GLTFLoader();
+            const gltf = await loader.loadAsync(path);
+            return gltf.scene;
         }
 
         function displayModel(code) {
-          if (activeModel) {
-            scene.remove(activeModel);
-          }
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
+            if (activeModel) {
+                scene.remove(activeModel);
+            }
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
 
-          loadModel(qrToModelMap[code]).then(model => {
+            loadModel(qrToModelMap[code]).then(model => {
+                if (code === "model1") {
+                    model.scale.set(0.03, 0.03, 0.03);
+                }
 
-              if (code === "model1") {
-                  model.scale.set(0.03, 0.03, 0.03);
-              }
+                // Position the model in the scene
+                model.position.set(0, 0, -0.5);
 
+                activeModel = model;
+                scene.add(model);
 
-              // Position the model in the scene
-              model.position.set(0, 0, -0.5);
-
-              activeModel = model;
-              scene.add(model);
-
-              timeoutId = setTimeout(() => {
-                  scene.remove(activeModel);
-                  activeModel = null;
-              }, 5000);
-          });
+                timeoutId = setTimeout(() => {
+                    scene.remove(activeModel);
+                    activeModel = null;
+                }, 5000);
+            });
         }
-
-
 
         function onSelect() {
             // Placeholder for potential future interactivity on model selection
@@ -179,8 +157,6 @@
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
@@ -188,21 +164,9 @@
             renderer.render(scene, camera);
         }
 
-
-        function startQRCodeScanning() {
-            setInterval(() => {
-                const qrCode = detectQRCode();  // Scan periodically every 500ms
-                if (qrCode && qrToModelMap[qrCode.data]) {
-                    displayModel(qrCode.data);  // If QR code is found, load model
-                }
-            }, 500);  // Scan every 500ms
-        }
-
-        // Call startQRCodeScanning after initialization
-        init().then(() => {
-            startQRCodeScanning();  // Start QR scanning after everything is set up
-        });
-
+        // Initialize everything
+        init();
     </script>
 </body>
 </html>
+
