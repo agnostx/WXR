@@ -41,7 +41,9 @@
         let model; // Placeholder for the loaded 3D model
         let video;
         let scan;
-
+        let actives = [];
+        let alltimes = [];
+        let allmodels = [];
         async function init() {
             const container = document.createElement('div');
             document.body.appendChild(container);
@@ -121,8 +123,7 @@
             "model2": "scene1.gltf",
         };
 
-        let activeModel = null;
-        let timeoutId = null;
+
 
         async function loadModel(path) {
             const loader = new GLTFLoader();
@@ -131,32 +132,47 @@
         }
 
         function displayModel(code) {
-            if (activeModel) {
-                scene.remove(activeModel);
-            }
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
+            if (code in actives) {
+                let pos = actives.indexOf(code);
+                clearTimeout(alltimes[pos])
+                alltimes[pos] = setTimeout(() => {
+                        scene.remove(allmodels[pos]);
 
-            loadModel(qrToModelMap[code]).then(model => {
-                if (code === "model1") {
-                    model.scale.set(0.003, 0.003, 0.003);
-                }
-
-                // Position the model in the scene
-                model.position.set(0, 0, -0.5);
-
-                activeModel = model;
-                scene.add(model);
-
-                timeoutId = setTimeout(() => {
-                    if (activeModel) {
-                        scene.remove(activeModel);
-                        activeModel = null;
+                        allmodels.splice(pos, 1);
+                        alltimes.splice(pos, 1);
+                        actives.splice(pos, 1);
                         console.log("Model removed after 5 seconds.");
-                    }
                 }, 5000);
-            });
+
+            }else {
+                actives=actives+[result];
+
+
+                loadModel(qrToModelMap[code]).then(model => {
+                    if (code === "model1") {
+                        model.scale.set(0.003, 0.003, 0.003);
+                    }
+
+                    // Position the model in the scene
+                    model.position.set(0, 0, -0.5);
+
+                    allmodels=allmodels+[model];
+
+                    scene.add(model);
+
+                    alltimes.push(setTimeout(() => {
+                        if (activeModel) {
+                            scene.remove(activeModel);
+                            let pos=allmodels.length-1;
+                            allmodels.splice(pos, 1);
+                            alltimes.splice(pos, 1);
+                            actives.splice(pos, 1);
+                            console.log("Model removed after 5 seconds.");
+                        }
+                    }, 5000));
+
+                });
+            }
         }
 
         function onSelect() {
