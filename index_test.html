@@ -161,9 +161,9 @@
                     scene.add(model);
 
                     alltimes.push(setTimeout(() => {
-                        if (activeModel) {
-                            scene.remove(activeModel);
-                            let pos=allmodels.length-1;
+                        let pos = actives.indexOf(code);
+                        if (pos!==-1) {
+                            scene.remove(allmodels[pos]);
                             allmodels.splice(pos, 1);
                             alltimes.splice(pos, 1);
                             actives.splice(pos, 1);
