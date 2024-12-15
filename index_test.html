@@ -78,29 +78,31 @@
         }
 
         async function setupCamera() {
-          const video = document.createElement('video');
-          video.style.display = 'none';
-          document.body.appendChild(video);
+           const video = document.createElement('video');
+           video.style.display = 'none'; // Don't show video
+           document.body.appendChild(video);
 
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          video.srcObject = stream;
-          await video.play();
-          return video;
+           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+           video.srcObject = stream;
+           await video.play();
+
+           console.log('Camera feed is playing');
+           return video;
         }
 
 
         function scanQRCode(video) {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d', { willReadFrequently: true }); // Enable frequent read optimization
+           const canvas = document.createElement('canvas');
+           const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+           // Ensure canvas size matches the video feed
+           canvas.width = video.videoWidth;
+           canvas.height = video.videoHeight;
 
-
-          return () => {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+           return () => {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (qrCode) {
               console.log(`QR Code Detected: ${qrCode.data}`);
