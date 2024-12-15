@@ -24,6 +24,9 @@
         (Chrome Android 81+)
     </div>
 
+      <div id="debug-info" style="position: absolute; top: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); color: white; font-size: 16px; padding: 10px; z-index: 999;">
+        Debug Info: Waiting for QR code...
+      </div>
     <!-- Move the scripts here to the end of the body -->
 
     <script type="module">
@@ -81,6 +84,7 @@
           return video;
         }
 
+        const debugElement = document.getElementById('debug-info');
 
         function scanQRCode(video) {
           const canvas = document.createElement('canvas');
@@ -96,11 +100,11 @@
             const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (qrCode) {
-              console.log("Detected QR Code: ", qrCode.data);
+              debugElement.innerText = `Debug Info: QR Code Detected - ${qrCode.data}`;
+              console.log(`QR Code Detected: ${qrCode.data}`);
+            } else {
+              debugElement.innerText = "Debug Info: No QR code detected.";
             }
-            //else {
-            //  console.log("No QR code detected.");
-            //}
 
             return qrCode;
           };
@@ -175,6 +179,14 @@
         function animate() {
             renderer.render(scene, camera);
         }
+
+        setInterval(() => {
+          const qrCode = scan();
+          if (qrCode && qrToModelMap[qrCode.data]) {
+            displayModel(qrCode.data);
+          }
+        }, 500); // Scan every 500ms
+
     </script>
 </body>
 </html>
