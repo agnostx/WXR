@@ -79,7 +79,7 @@
             video.style.display = 'none'; // Don't show video
             document.body.appendChild(video);
 
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment',focusMode: 'continuous' } });
             video.srcObject = stream;
             await video.play();
 
@@ -88,17 +88,22 @@
         }
 
         // Function to start QR scanning using QrScanner
-        async function startQRCodeScanning() {
-            const qrScanner = new QrScanner(video, (result) => {
-                console.log(`QR Code scanned: ${result}`);
-                onQRCodeScanned(result);
-            });
+        async function setupQRCodeScanner() {
+            const video = document.createElement('video');
+            document.body.appendChild(video); // Add video to body
 
             try {
-                await qrScanner.start();  // Start QR scanner
-                console.log("QR Scanner started successfully!");
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                video.srcObject = stream;
+                video.play();
+
+                const qrScanner = new QrScanner(video, onQRCodeScanned);
+                qrScanner.start();
+                console.log('QR Scanner started');
             } catch (err) {
-                console.error("Error starting QR Scanner:", err);
+                console.error('Error accessing camera:', err);
             }
         }
 
